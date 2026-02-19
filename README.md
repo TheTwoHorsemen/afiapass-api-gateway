@@ -1,107 +1,117 @@
-# 🌐 AfiaPass API Gateway — The Interface Layer 🔗
+# 🌐 AfiaPass API Gateway
 
-**AfiaPass API Gateway** is a high-performance Spring Boot 3 microservice that orchestrates the **AfiaPass Java SDK**. It provides a secure, RESTful entry point for third-party platforms, government dashboards, and mobile applications to interact with the Stellar network.
-
-By wrapping the complexity of blockchain key management, transaction signing, and Soroban contract invocation, the Gateway allows developers to issue and verify transit permits using standard JSON/REST patterns.
-
-### 🔑 Quick Summary
-
-| Property | Value |
-| :--- | :--- |
-| **Framework** | **Spring Boot 3.x (Java 21)** |
-| **SDK Integration**| **AfiaPass Java SDK (Loom-Enabled)** |
-| **Database** | **PostgreSQL** (Transaction Persistence) |
-| **Cache** | **Redis** (High-Speed Verification) |
-| **Deployment** | **Docker / Kubernetes (AWS EKS)** |
+The **AfiaPass API Gateway** is a high-performance Spring Boot 3 microservice that orchestrates the **AfiaPass Java SDK**. It acts as the "Interface" layer, providing a secure, RESTful entry point for third-party platforms, government dashboards, and mobile applications to interact with the Stellar Soroban network without needing to handle blockchain keys directly.
 
 ---
 
-### 👥 Target Ecosystem
+## ⚙️ Key Features
 
-* **Logistics Platforms**: Rapid integration for delivery apps like **Drive-Thru Afia**.
-* **Government Portals**: Real-time revenue monitoring and fiscal transparency dashboards.
-* **Verification Apps**: Lightweight, offline-first scanners used by road officials.
+### 🔌 RESTful Blockchain Orchestration
+* **Seamless Abstraction**: Wraps complex Soroban contract invocations, SEP-10 offline JWT generation, and SDK key management into simple REST endpoints.
+* **Target Ecosystem**: Designed for immediate integration by logistics platforms (Drive-Thru Afia), government monitoring portals, and lightweight verification scanners.
 
----
+### 🚀 Enterprise-Grade Scalability
+* **Project Loom (Virtual Threads)**: Leverages Java 21's lightweight virtual threads to handle thousands of concurrent blockchain requests without thread exhaustion or blocking.
+* **Stateless Architecture**: Fully containerized and ready for horizontal scaling across Kubernetes (EKS) clusters.
 
-### 🔌 Primary API Endpoints
-
-The Gateway exposes a versioned REST API (`/v1`) with full OpenAPI/Swagger documentation.
-
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `POST` | `/v1/permits` | Issues a new transit permit via Soroban contract split. |
-| `GET` | `/v1/verify/{id}` | Checks the on-chain status and JWT validity of a permit. |
-| `GET` | `/v1/analytics` | Returns aggregated data on tax collection across routes. |
-| `GET` | `/v1/health` | Service health check and Stellar RPC connectivity status. |
+### ⚡ High-Speed Caching & Persistence
+* **Redis Integration**: Caches verified permits to allow sub-millisecond response times for road officials scanning QR codes in the field, reducing RPC node loads.
+* **PostgreSQL Database**: Maintains an off-chain ledger of transaction histories, API rate limits, and analytics data for government reporting.
 
 ---
 
-### 📁 Project Structure
-
-The Gateway follows a standard Spring Boot hexagonal structure, keeping the SDK orchestration separate from the REST controllers.
+## 📁 Project Structure
 
 ```text
 afiapass-api-gateway/
+├── README.md
+├── Dockerfile
+├── docker-compose.yml
+├── pom.xml
+├── .env.example
+│
 ├── src/main/java/org/afiapass/gateway/
-│   ├── api/                # REST Controllers & OpenApi Definitions
-│   ├── service/            # SDK Wrapper & Orchestration Logic
-│   ├── repository/         # PostgreSQL JPA Repositories
-│   ├── model/              # Database Entities & REST DTOs
-│   └── config/             # SDK Beans & Security Configurations
-├── src/main/resources/
-│   └── application.yml     # Environment-specific properties
-├── Dockerfile              # Multi-stage build for EKS
-└── docker-compose.yml      # Local Dev Environment (Postgres + Redis)
+│   ├── api/                   # REST Controllers & OpenAPI Definitions
+│   │   ├── PermitController.java
+│   │   └── AnalyticsController.java
+│   │
+│   ├── service/               # SDK Wrapper & Orchestration Logic
+│   │   ├── GatewayPermitService.java
+│   │   └── CacheService.java
+│   │
+│   ├── repository/            # PostgreSQL JPA Repositories
+│   │   └── PermitRecordRepository.java
+│   │
+│   ├── model/                 # Database Entities & REST DTOs
+│   │   ├── dto/
+│   │   └── entity/
+│   │
+│   └── config/                # SDK Beans, Security, & Redis Configs
+│       ├── AfiaPassAutoConfiguration.java
+│       └── SecurityConfig.java
+│
+└── src/main/resources/
+    ├── application.yml        # Core Spring Boot properties
+    └── db/migration/          # Flyway database migrations
 
-🛠️ Development Setup
+🧭 How AfiaPass Gateway Works
+🎫 Permit Issuance Workflow
 
+    Client Request: A logistics vendor (e.g., Drive-Thru Afia) sends a POST /v1/permits request containing rider and route details.
+
+    Validation: The Gateway validates the incoming JSON payload and checks the vendor's API key.
+
+    SDK Invocation: The Gateway triggers the AfiaPass Java SDK via a Virtual Thread to execute the Soroban tax-split contract.
+
+    Data Persistence: Upon blockchain success, the transaction hash and generated SEP-10 JWT are saved to PostgreSQL.
+
+    Response: The final Permit payload is returned to the client to be rendered as a QR code.
+
+🔍 Verification & Analytics Workflow
+
+    GET /v1/verify/{id}: A road official scans a QR code. The Gateway checks Redis first for instant validation. If missing, it uses the SDK's TokenVerifier to cryptographically prove the permit offline, then caches the result.
+
+    GET /v1/analytics: Government portals can query aggregate data directly from PostgreSQL without needing to scrape the blockchain.
+
+⚡ Getting Started
 Prerequisites
 
-    Java 21+ (GraalVM recommended)
+    Java 21+ (GraalVM or Temurin recommended)
+
+    Maven 3.9+
 
     Docker & Docker Compose
 
-    Access to a Stellar RPC Node (Testnet or Mainnet)
+    Stellar RPC Access (Testnet or Mainnet URL)
 
-1. Clone and Initialize Environment:
+Installation
+
+1. Clone Repository
 Bash
 
 git clone [https://github.com/TheTwoHorsemen/afiapass-api-gateway.git](https://github.com/TheTwoHorsemen/afiapass-api-gateway.git)
+cd afiapass-api-gateway
+
+2. Configure Environment
+Copy the example environment file and add your database credentials and Stellar configuration.
+Bash
+
 cp .env.example .env
 
-2. Start Infrastructure (Postgres & Redis):
+3. Start Infrastructure (Postgres & Redis)
+Use Docker Compose to spin up the required caching and database layers locally.
 Bash
 
 docker-compose up -d
 
-3. Run the Application:
+4. Run the Application
+Start the Spring Boot server using the Maven wrapper.
 Bash
 
 ./mvnw spring-boot:run
 
-🐳 Deployment & Scalability
+🛡️ Security & Architecture Constraints
 
-The Gateway is designed to be stateless, allowing for horizontal scaling across Kubernetes clusters.
+    Key Isolation: The Gateway never exposes the Platform's Stellar Secret Key via the API. All signing happens securely and internally within the encapsulated SDK layer.
 
-    Containerization: Optimized Docker images using distroless bases for security.
-
-    Observability: Prometheus/Grafana metrics exposed via spring-boot-starter-actuator.
-
-    Resilience: Integrated with the Java SDK's Virtual Thread pool to handle thousands of concurrent blockchain requests without thread exhaustion.
-
-🛡️ Security
-
-    Key Isolation: The Gateway never exposes the Platform's Stellar Secret Key. All signing happens internally within the SDK layer.
-
-    Rate Limiting: Redis-backed rate limiting to prevent DDoS attacks on the Stellar RPC nodes.
-
-    JWT Validation: Built-in verification for incoming third-party requests using OAuth2/OIDC standards.
-
-🗺️ Roadmap
-
-    Phase 1: MVP REST wrapper for issuePermit and verifyPermit.
-
-    Phase 2: Government Dashboard API with route-based analytics.
-
-    Phase 3: Webhook support for real-time payment notifications.
+    Rate Limiting: Built-in Redis-backed API rate limiting to prevent DDoS attacks and accidental spam from third-party vendor integrations.

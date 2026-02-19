@@ -53,6 +53,7 @@ afiapass-api-gateway/
 └── src/main/resources/
     ├── application.yml        # Core Spring Boot properties
     └── db/migration/          # Flyway database migrations
+```
 
 🧭 How AfiaPass Gateway Works
 🎫 Permit Issuance Workflow
@@ -87,28 +88,37 @@ Prerequisites
 Installation
 
 1. Clone Repository
-Bash
-
-git clone [https://github.com/TheTwoHorsemen/afiapass-api-gateway.git](https://github.com/TheTwoHorsemen/afiapass-api-gateway.git)
-cd afiapass-api-gateway
-
+   <prev>
+   ```
+        Bash
+        
+        git clone [https://github.com/TheTwoHorsemen/afiapass-api-gateway.git](https://github.com/TheTwoHorsemen/afiapass-api-gateway.git)
+        cd afiapass-api-gateway
+   ```
+   </prev>
 2. Configure Environment
 Copy the example environment file and add your database credentials and Stellar configuration.
-Bash
+   ```text
+        Bash
+        
+        cp .env.example .env
+   ```
 
-cp .env.example .env
-
-3. Start Infrastructure (Postgres & Redis)
+4. Start Infrastructure (Postgres & Redis)
 Use Docker Compose to spin up the required caching and database layers locally.
-Bash
-
-docker-compose up -d
+    ```text
+        Bash
+        
+        docker-compose up -d
+    ```
 
 4. Run the Application
 Start the Spring Boot server using the Maven wrapper.
-Bash
-
-./mvnw spring-boot:run
+    ```text
+        Bash
+        
+        ./mvnw spring-boot:run
+    ```
 
 🛡️ Security & Architecture Constraints
 
